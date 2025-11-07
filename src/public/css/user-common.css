@@ -1,0 +1,349 @@
+/* ========================================
+   resources/css/user-common.css
+   利用者用共通スタイル
+   ======================================== */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Hiragino Sans', 'Yu Gothic UI', system-ui, sans-serif;
+    background: #f9fafb;
+    color: #111827;
+    line-height: 1.6;
+}
+
+/* ヘッダー */
+.header {
+    background: linear-gradient(135deg, #86efac 0%, #16a34a 100%);
+    padding: 16px 24px;
+    border-bottom: 3px solid #15803d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.header-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.header h1 {
+    font-size: 28px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    margin-bottom: 2px;
+}
+
+.header-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.home-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    color: white;
+    text-decoration: none;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+}
+
+.home-icon:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.home-icon svg {
+    filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.2));
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.2);
+    padding: 8px 12px;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.user-profile:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #16a34a;
+    font-size: 18px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.user-name {
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+.user-status {
+    font-size: 11px;
+    color: rgba(255,255,255,0.9);
+}
+
+/* ユーザーメニューポップアップ */
+.user-menu-popup {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    min-width: 150px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+}
+
+.user-menu-item {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.user-menu-item:hover {
+    background: #f3f4f6;
+}
+
+.logout-item {
+    border-top: 1px solid #e5e7eb;
+    color: #dc2626;
+}
+
+.logout-item:hover {
+    background: #fef2f2;
+}
+
+/* ナビゲーション */
+.nav-tabs {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0 20px;
+    display: flex;
+    gap: 0;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.nav-tabs a {
+    padding: 16px 32px;
+    text-decoration: none;
+    color: #111827;
+    border-top: 1px solid #e5e7eb;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 500;
+    transition: all 0.2s;
+    flex: 1;
+    text-align: center;
+    max-width: 240px;
+    border-radius: 8px 8px 0 0;
+}
+
+.nav-tabs a.active {
+    background: #f9fafb;
+    color: #16a34a;
+    border-bottom-color: #16a34a;
+    border-top: 1px solid #e5e7eb;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #f9fafb;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: -1px;
+    font-weight: 600;
+}
+
+.nav-tabs a:hover:not(.active) {
+    background: #f3f4f6;
+    border-top: 1px solid #d1d5db;
+    border-left: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+}
+
+/* メインコンテンツ */
+.main-content {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* アラート */
+.alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.alert.info {
+    background: #dbeafe;
+    border: 1px solid #3b82f6;
+    color: #1e40af;
+}
+
+.alert.warning {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+}
+
+.alert.success {
+    background: #dcfce7;
+    border: 1px solid #16a34a;
+    color: #166534;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .header {
+        padding: 12px 16px;
+    }
+
+    .home-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .home-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .header-right {
+        gap: 8px;
+    }
+
+    .user-profile {
+        padding: 6px 8px;
+        gap: 8px;
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+
+    .user-name {
+        font-size: 12px;
+    }
+
+    .main-content {
+        padding: 16px;
+    }
+
+    .nav-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 0 16px;
+    }
+
+    .nav-tabs a {
+        flex-shrink: 0;
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+
+    .user-menu-popup {
+        right: -8px;
+        min-width: 120px;
+    }
+
+    .user-menu-item {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header h1 {
+        font-size: 20px;
+    }
+
+    .header-center {
+        left: calc(50% - 12px);
+    }
+
+    .home-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .home-icon svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .user-details {
+        display: none;
+    }
+
+    .user-profile {
+        padding: 4px 6px;
+    }
+
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+}

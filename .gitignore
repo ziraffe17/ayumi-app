@@ -1,0 +1,25 @@
+# Laravel & Docker
+/vendor
+/node_modules
+.env
+storage/*.key
+storage/logs/*
+storage/framework/*
+bootstrap/cache/*
+
+# Docker volumes
+docker-compose.override.yml
+mysql_data/
+redis_data/
+
+/coverage
+.phpunit.result.cache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+.claude/

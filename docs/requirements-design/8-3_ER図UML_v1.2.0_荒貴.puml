@@ -1,0 +1,198 @@
+@startuml
+!theme plain
+left to right direction
+skinparam roundcorner 8
+skinparam shadowing false
+
+legend left
+  命名ルール:
+    *_date = 日付, *_time_slot = 時間枠, *_type = 種別, *_at = 日時(UTC)
+    真偽値は is_* / has_* に統一
+  参照:
+    interviews.staff_id → staffs.id
+    すべての *user_id → users.id
+  ENUMの意味（抜粋）:
+    staffs.role: admin=管理者, staff=支援員
+    plans.plan_time_slot: am/pm/full
+    plans.plan_type: onsite=通所, remote=在宅, off=休み(分母除外)
+    records.record_time_slot: am/pm/full
+    records.attendance_type: onsite/remote=出席(分子), absent=欠席
+    records.source: self=本人, staff=職員
+    audit.actor_type: user=利用者(users), staff=職員(staffs)
+    holidays.source: import/manual
+endlegend
+
+' ===== アカウント =====
+entity "staffs\n（職員/管理アカウント）" as staffs {
+  *id : BIGINT
+  --
+  email : VARCHAR(255) <<UNIQUE>>
+  name : VARCHAR(255)
+  name_kana : VARCHAR(255)?
+  password : VARCHAR(255)
+  role : ENUM(admin,staff)
+  last_login_at : DATETIME?
+  failed_attempts : INT
+  is_active : TINYINT(1)
+  deleted_at : DATETIME?     ' 論理削除
+  created_at : DATETIME
+  updated_at : DATETIME
+}
+
+entity "users\n（利用者）" as users {
+  *id : BIGINT
+  --
+  name : VARCHAR(255)
+  name_kana : VARCHAR(255)?
+  login_code : VARCHAR(32) <<UNIQUE>>
+  email : VARCHAR(255)? <<UNIQUE>>
+  password : VARCHAR(255)
+  start_date : DATE
+  end_date : DATE?
+  care_note_enc : TEXT?
+  created_by : BIGINT?    ' staffs.id
+  updated_by : BIGINT?    ' staffs.id
+  last_login_at : DATETIME?
+  failed_attempts : INT
+  is_active : TINYINT(1)
+  deleted_at : DATETIME?
+  created_at : DATETIME
+  updated_at : DATETIME
+}
+
+' ===== コア業務 =====
+entity "attendance_plans" as plans {
+  *id : BIGINT
+  --
+  user_id : BIGINT
+  plan_date : DATE
+  plan_time_slot : ENUM(am,pm,full)
+  plan_type : ENUM(onsite,remote,off)
+  note : TEXT?
+  is_holiday : TINYINT(1)
+  holiday_name : VARCHAR(50)?
+  template_source : ENUM(prev_month,weekday)?
+  created_at : DATETIME
+  updated_at : DATETIME
+  --
+  {unique} (user_id, plan_date, plan_time_slot)
+  {index} (user_id, plan_date)
+}
+
+entity "attendance_records" as records {
+  *id : BIGINT
+  --
+  user_id : BIGINT
+  record_date : DATE
+  record_time_slot : ENUM(am,pm,full)
+  attendance_type : ENUM(onsite,remote,absent)
+  note : TEXT?
+  source : ENUM(self,staff)
+  created_at : DATETIME
+  updated_at : DATETIME
+  --
+  {unique} (user_id, record_date, record_time_slot)
+  {index} (user_id, record_date)
+}
+
+entity "daily_reports_morning" as m_reports {
+  *id : BIGINT
+  --
+  user_id : BIGINT
+  report_date : DATE
+  sleep_rating : TINYINT     ' 1..3
+  stress_rating : TINYINT    ' 1..3
+  meal_rating : TINYINT      ' 1..3
+  bed_time_local : TIME
+  wake_time_local : TIME
+  bed_at : DATETIME?         ' UTC保存（ローカル入力をサーバー変換）
+  wake_at : DATETIME?        ' UTC保存（ローカル入力をサーバー変換）
+  sleep_minutes : INT?
+  mid_awaken_count : TINYINT  ' 0..N
+  is_early_awaken : TINYINT(1)
+  is_breakfast_done : TINYINT(1)
+  is_bathing_done : TINYINT(1)
+  is_medication_taken : TINYINT(1)?  ' NULL=習慣なし/0=未/1=済
+  mood_score : TINYINT?
+  sign_good : INT
+  sign_caution : INT
+  sign_bad : INT
+  note : TEXT?
+  created_at : DATETIME
+  updated_at : DATETIME
+  --
+  {unique} (user_id, report_date)
+  {index} (user_id, report_date)
+}
+
+entity "daily_reports_evening" as e_reports {
+  *id : BIGINT
+  --
+  user_id : BIGINT
+  report_date : DATE
+  training_summary : TEXT?
+  training_feedback : TEXT?
+  condition_note : TEXT?
+  other_note : TEXT?
+  created_at : DATETIME
+  updated_at : DATETIME
+  --
+  {unique} (user_id, report_date)
+  {index} (user_id, report_date)
+}
+
+entity "interviews" as interviews {
+  *id : BIGINT
+  --
+  user_id : BIGINT
+  staff_id : BIGINT        ' staffs.id
+  interview_date : DATE
+  summary_enc : TEXT
+  detail_enc : TEXT?
+  next_action : TEXT?
+  created_at : DATETIME
+  updated_at : DATETIME
+  --
+  {index} (user_id, interview_date)
+  {index} (staff_id, interview_date)
+}
+
+' ===== 監査/マスター =====
+entity "audit_logs" as audit {
+  *id : BIGINT
+  --
+  actor_type : ENUM(user,staff)
+  actor_id : BIGINT
+  occurred_at : DATETIME     ' UTC保存
+  action : ENUM(login,create,update,delete,export,setting)
+  entity : VARCHAR(64)       ' 例: 'users','staffs','attendance_plans'...（外部キー制約なし）
+  entity_id : BIGINT?        ' 対象テーブルの主キー（*_id）。entity とセットで意味を持つ
+  diff_json : TEXT?          ' JSON文字列
+  ip : VARCHAR(45)?
+  user_agent : VARCHAR(255)?
+  meta : TEXT?
+  --
+  {index} (occurred_at)
+  {index} (actor_type, actor_id, action)
+}
+
+entity "holidays" as holidays {
+  *holiday_date : DATE
+  --
+  name : VARCHAR(50)
+  source : ENUM(import,manual)
+  imported_at : DATETIME?
+}
+
+' ===== リレーション =====
+staffs  ||..o{ users      : created_by / updated_by
+users   ||--o{ plans      : user_id
+users   ||--o{ records    : user_id
+users   ||--o{ m_reports  : user_id
+users   ||--o{ e_reports  : user_id
+users   ||--o{ interviews : user_id
+staffs  ||--o{ interviews : staff_id
+
+holidays ||..o{ plans : plan_date ~ holiday_date（非FK; 取込で反映）
+
+@enduml

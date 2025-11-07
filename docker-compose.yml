@@ -1,0 +1,62 @@
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      - APP_ENV=local
+      - PHP_OPCACHE_VALIDATE_TIMESTAMPS=1
+    depends_on:
+      - db
+      - redis
+    networks: [appnet]
+
+  web:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./src:/var/www/html
+      - ./docker/web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
+    networks: [appnet]
+
+  db:
+    image: mysql:8.0
+    command: >
+      mysqld
+      --default-time-zone='+00:00'
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_0900_ai_ci
+      --log_bin_trust_function_creators=1
+    environment:
+      - MYSQL_DATABASE=tsusho
+      - MYSQL_USER=tsu
+      - MYSQL_PASSWORD=tsu
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./docker/db/init:/docker-entrypoint-initdb.d
+    ports: ["3306:3306"]
+    networks: [appnet]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    networks: [appnet]
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - "8025:8025"
+    networks: [appnet]
+
+volumes:
+  dbdata:
+
+networks:
+  appnet:

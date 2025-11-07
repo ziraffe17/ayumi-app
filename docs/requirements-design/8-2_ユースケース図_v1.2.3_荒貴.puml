@@ -1,0 +1,138 @@
+@startuml
+!theme plain
+left to right direction
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+
+legend left
+  Actors ↔ DB:
+    利用者(User)  → usersテーブル
+    職員(Staff)   → staffsテーブル(role=staff)
+    管理者(Admin) → staffsテーブル(role=admin)
+  認証入力:
+    利用者 = login_code + password
+    職員   = email + password + TOTP(2FA)
+  注意:
+    出席管理には日報トレンドは含めない
+    個人ダッシュには日報トレンドを含める
+  用語（最新スキーマ準拠）:
+    出席予定: plan_time_slot = am/pm/full, plan_type = onsite/remote/off
+    出席実績: record_time_slot = am/pm/full, attendance_type = onsite/remote/absent
+    朝日報  : sleep_quality は廃止 → mid_awaken_count / is_early_awaken を使用
+    監査    : occurred_at（旧 at）, entity / entity_id（FK制約なしの参照）
+    アカウント状態: is_active（旧 is_enabled / status）
+endlegend
+
+actor "利用者\n(User)" as User
+actor "職員\n(Staff)" as Staff
+actor "管理者\n(Admin)" as Admin
+actor "祝日データ源\n(CSV/API)" as HolidaySrc
+
+rectangle "通所支援 業務アプリ" as System {
+
+  ' 認証・共通
+  usecase "ログイン/ログアウト" as UC_Login
+  usecase "RBACで権限制御" as UC_RBAC
+  usecase "操作を監査ログに記録" as UC_Audit
+
+  ' ダッシュボード
+  usecase "個人ダッシュを表示\n(7/30日, 当月KPI, 日報トレンド)" as UC_MyDash
+  usecase "事業所ダッシュを表示\n(集計, 未入力/未計画, ランキング)" as UC_OrgDash
+  usecase "出席率を算出\n(分母=計画[onsite/remote], 分子=実績[onsite/remote])" as UC_CalcKPI
+
+  ' 予定
+  usecase "出席予定を登録/編集/削除\n(onsite/remote/off)" as UC_PlanCRUD
+  usecase "前月コピー" as UC_PlanCopy
+  usecase "平日一括反映" as UC_PlanWeekday
+  usecase "祝日取込で\nis_holiday/holiday_name反映" as UC_PlanHolidayApply
+
+  ' 実績（出席管理グリッド）
+  usecase "出席実績を登録\n(onsite/remote/absent)" as UC_RecordCreate
+  usecase "実績を修正(過去日ポリシー)" as UC_RecordUpdate
+  usecase "実績の承認/ロック" as UC_RecordApprove
+
+  ' 日報
+  usecase "朝日報を入力\n(◯/△/✕=3/2/1, mid_awaken_count, is_early_awaken, tri-state服薬)" as UC_Morning
+  usecase "夕日報を入力" as UC_Evening
+  usecase "日報を前回からコピー" as UC_ReportCopy
+
+  ' 利用者/面談/出力/設定/監査
+  usecase "利用者を管理\n(一覧/詳細/状態, 暗号化項目)" as UC_UsersManage
+  usecase "面談記録を管理\n(要約/詳細は暗号化)" as UC_Interviews
+  usecase "CSVを出力\n(期間/対象/列テンプレ)" as UC_CSV
+  usecase "設定を管理\n(祝日取込/用語/ロール)" as UC_Settings
+  usecase "監査ログを閲覧/検索" as UC_AuditView
+  usecase "祝日を取込" as UC_HolidayImport
+}
+
+' ===== 関連付け =====
+User  --> UC_Login
+Staff --> UC_Login
+Admin --> UC_Login
+
+User  --> UC_MyDash
+Staff --> UC_MyDash
+Staff --> UC_OrgDash
+Admin --> UC_OrgDash
+
+' 予定
+User  --> UC_PlanCRUD : 初回登録（許可範囲内）
+User  --> UC_PlanCopy : 初回登録のみ
+User  --> UC_PlanWeekday : 初回登録のみ
+Staff --> UC_PlanCRUD
+Staff --> UC_PlanCopy
+Staff --> UC_PlanWeekday
+UC_PlanCRUD --> UC_PlanHolidayApply : <<include>>   ' 保存時に祝日情報を自動反映
+
+' 実績
+User  --> UC_RecordCreate
+Staff --> UC_RecordCreate
+Staff --> UC_RecordUpdate
+Staff --> UC_RecordApprove
+
+' 日報
+User  --> UC_Morning
+User  --> UC_Evening
+User  --> UC_ReportCopy
+Staff --> UC_Morning : 代理補助
+Staff --> UC_Evening : 代理補助
+Staff --> UC_ReportCopy : 代理補助
+
+' 管理・出力
+Staff --> UC_UsersManage
+Admin --> UC_UsersManage
+Staff --> UC_Interviews
+Staff --> UC_CSV
+Admin --> UC_CSV
+Admin --> UC_Settings
+Admin --> UC_AuditView
+Admin --> UC_HolidayImport
+HolidaySrc --> UC_HolidayImport
+
+' ===== 依存関係 =====
+UC_MyDash  --> UC_CalcKPI : <<include>>
+UC_OrgDash --> UC_CalcKPI : <<include>>
+
+' 主要操作は監査へ（occurred_at / entity / entity_id を記録）
+UC_Login          --> UC_Audit : <<include>>   ' 認証成功/失敗/403/ロック/解除/2FA設定
+UC_RBAC           --> UC_Audit : <<include>>   ' 403等の権限制御イベント
+UC_PlanCRUD       --> UC_Audit : <<include>>
+UC_PlanCopy       --> UC_Audit : <<include>>
+UC_PlanWeekday    --> UC_Audit : <<include>>
+UC_PlanHolidayApply --> UC_Audit : <<include>>
+UC_RecordCreate   --> UC_Audit : <<include>>
+UC_RecordUpdate   --> UC_Audit : <<include>>
+UC_RecordApprove  --> UC_Audit : <<include>>
+UC_Morning        --> UC_Audit : <<include>>
+UC_Evening        --> UC_Audit : <<include>>
+UC_ReportCopy     --> UC_Audit : <<include>>
+UC_UsersManage    --> UC_Audit : <<include>>
+UC_Interviews     --> UC_Audit : <<include>>
+UC_CSV            --> UC_Audit : <<include>>
+UC_Settings       --> UC_Audit : <<include>>
+UC_AuditView      --> UC_RBAC  : <<include>>   ' 閲覧権限はRBACで保護
+
+' 出席管理の承認/ロックは実績登録の拡張
+UC_RecordApprove -[#gray]-> UC_RecordCreate : <<extend>>\n(承認後は編集ロック)
+
+@enduml
